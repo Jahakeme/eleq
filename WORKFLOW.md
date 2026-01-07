@@ -7,7 +7,7 @@ EleQ is an electronics-only marketplace where:
 - **Anyone** can browse the product dashboard (no auth required)
 - **Purchasing** requires user authentication
 - **After login**, users are redirected to checkout for their selected product
-- **Product images** are matched via product ID on the frontend (placeholder approach)
+- **Product images** are stored as external URLs in the database (no local image files)
 
 ---
 
@@ -50,41 +50,51 @@ EleQ is an electronics-only marketplace where:
 
 ## Product Image Strategy
 
-Since there's no admin dashboard, images are matched to products via their ID on the frontend.
+Product images are stored as external URLs in the database. No local image files are stored in the `public/` folder.
 
-### Directory Structure
+### URL Storage
 
-```bash
-frontend/public/products/
-├── prod_001.jpg    # Matches product with id containing "001"
-├── prod_002.jpg
-├── wireless-mouse.jpg
-├── gaming-keyboard.jpg
-└── ...
-```
+Product image URLs are managed in two places:
 
-### Image Mapping Approach
+1. **Database**: Each product has an `imageUrl` field storing the external URL
+2. **Reference File**: `frontend/app/data/url.ts` serves as a reference/lookup for URLs before manual database entry
 
-### Option A: ID-Based Naming (Recommended)**
+### Reference File Structure
 
 ```typescript
-// utils/getProductImage.ts
-export function getProductImage(productId: string): string {
-  return `/products/${productId}.jpg`;
-}
+// frontend/app/data/url.ts
+// This file stores product image URLs for reference before adding to database
 
-// Fallback to placeholder if image doesn't exist
-export function getProductImageWithFallback(productId: string): string {
-  return `/products/${productId}.jpg`;
-  // Use onError handler in <Image> component to show placeholder
-}
+export const productImageUrls = {
+  // Format: productId or slug -> external URL
+  // Example entries (to be populated):
+  // "macbook-pro-14": "https://example.com/images/macbook-pro.jpg",
+  // "wireless-mouse": "https://example.com/images/mouse.jpg",
+};
+
+// Usage: Reference these URLs when manually adding products to the database
 ```
 
-### Option B: Slug-Based Naming
+### Next.js Configuration
+
+External image domains must be configured in `next.config.ts`:
 
 ```typescript
-// Product model includes a slug field
-// Image file matches the slug: "wireless-mouse" → "/products/wireless-mouse.jpg"
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**', // Or specify allowed domains
+      },
+    ],
+  },
+};
+
+export default nextConfig;
 ```
 
 ### Frontend Implementation
@@ -96,12 +106,12 @@ import Image from 'next/image';
 export function ProductCard({ product }) {
   return (
     <Image
-      src={`/products/${product.id}.jpg`}
+      src={product.imageUrl}
       alt={product.name}
       width={300}
       height={300}
       onError={(e) => {
-        e.currentTarget.src = '/products/placeholder.jpg';
+        e.currentTarget.src = '/placeholder.jpg'; // Fallback placeholder
       }}
     />
   );
@@ -165,10 +175,11 @@ type Address {
 model Product {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  slug          String    @unique  // URL-friendly name, also used for image matching
+  slug          String    @unique  // URL-friendly name
   description   String
   price         Float
   comparePrice  Float?    // Original price for showing discounts
+  imageUrl      String    // External URL for product image
 
   // Categorization
   category      Category  @relation(fields: [categoryId], references: [id])
@@ -583,6 +594,7 @@ GET /api/products?category=laptops&minPrice=500&maxPrice=1500&sort=-price&page=1
       "description": "Apple M3 Pro chip, 18GB RAM, 512GB SSD",
       "price": 1999.99,
       "comparePrice": 2199.99,
+      "imageUrl": "https://example.com/images/macbook-pro-14.jpg",
       "brand": "Apple",
       "category": {
         "id": "507f1f77bcf86cd799439012",
@@ -632,6 +644,7 @@ Get single product details.
     "description": "Apple M3 Pro chip with 18GB unified memory...",
     "price": 1999.99,
     "comparePrice": 2199.99,
+    "imageUrl": "https://example.com/images/macbook-pro-14.jpg",
     "brand": "Apple",
     "category": {
       "id": "507f1f77bcf86cd799439012",
@@ -754,6 +767,7 @@ Get current user's cart.
           "name": "MacBook Pro 14\"",
           "slug": "macbook-pro-14",
           "price": 1999.99,
+          "imageUrl": "https://example.com/images/macbook-pro-14.jpg",
           "stock": 25,
           "status": "ACTIVE"
         },
@@ -1283,7 +1297,8 @@ export function BuyNowButton({ productId }: { productId: string }) {
 - [ ] Create products API route
 - [ ] Build product listing page
 - [ ] Build product detail page
-- [ ] Implement image matching by product ID
+- [ ] Configure Next.js for external image URLs
+- [ ] Populate `frontend/app/data/url.ts` with product image URLs
 
 ### Phase 4: Cart & Checkout
 
