@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { ShippingAddress } from "@/lib/checkout";
 
 import ShippingForm from "./ShippingForm";
@@ -9,7 +9,7 @@ import PaymentMethod from "./PaymentMethod";
 import OrderSummary from "./OrderSummary";
 import PlaceOrderButton from "./PlaceOrderButton";
 
-export default function CheckoutLayout() {
+function CheckoutContent() {
   const params = useSearchParams();
   const productId = params.get("product") || undefined;
 
@@ -49,5 +49,13 @@ export default function CheckoutLayout() {
         />
       </div>
     </div>
+  );
+}
+
+export default function CheckoutLayout() {
+  return (
+    <Suspense fallback={<div className="p-6 max-w-7xl mx-auto">Loading checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
