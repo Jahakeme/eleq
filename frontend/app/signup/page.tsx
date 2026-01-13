@@ -1,29 +1,34 @@
-import Image from "next/image"
-import { SignupForm } from "@/components/signup-form"
+import Image from "next/image";
+import { SignupForm } from "@/components/signup/signup-form";
 
 export default function SignupPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 ">
-          <a href="#" className="flex items-center gap-2 font-medium sm:text-lg">
-            eleq.
-          </a>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <SignupForm />
-          </div>
-        </div>
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Signup Form */}
+      <div
+        className="flex items-center justify-center p-8"
+        style={{ backgroundColor: "#E3E2DF" }}
+      >
+        <SignupForm />
       </div>
-      <div className="bg-muted relative hidden lg:block">
+
+      {/* Right side - Image */}
+      <div className="hidden lg:block relative overflow-hidden">
+        <div
+          className="absolute inset-0 z-10 opacity-20"
+          style={{ backgroundColor: "#540B26" }}
+        />
+
         <Image
           src="/signup-picture.jpg"
-          alt="Signup Illustration"
+          alt="Signup"
           fill
           className="object-cover"
+          priority
         />
+
+        <div className="absolute inset-0 z-20 from-[#E3E2DF]/20 to-transparent" />
       </div>
     </div>
-  )
+  );
 }
