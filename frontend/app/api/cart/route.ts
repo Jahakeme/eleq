@@ -4,6 +4,12 @@ import { Prisma } from "@/lib/generated/prisma";
 import prisma from "@/prisma/connection";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+// Prisma Error Codes Reference:
+// P2002 - Unique constraint violation (cart item already exists)
+// P2025 - Record not found (product not found)
+// P2003 - Foreign key constraint violation (invalid productId/userId)
+// P2023 - Inconsistent column data (invalid ObjectId format)
+
 type CartItemWithProduct = Prisma.CartItemGetPayload<{
   include: {
     product: {
@@ -143,6 +149,31 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error("Add to cart error:", error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // P2002 - Unique constraint violation (rare, since we handle upsert manually)
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { error: "Item already in cart", code: "P2002" },
+          { status: 409 }
+        );
+      }
+      // P2003 - Foreign key constraint violation
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Invalid product reference", code: "P2003" },
+          { status: 400 }
+        );
+      }
+      // P2023 - Invalid ObjectId format
+      if (error.code === "P2023") {
+        return NextResponse.json(
+          { error: "Invalid product ID format", code: "P2023" },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json({ error: "Failed to add item to cart" }, { status: 500 });
   }
 }
