@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Prisma } from "@/lib/generated/prisma";
 import prisma from "@/prisma/connection";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// Prisma Error Codes Reference:
+// P2002 - Unique constraint violation (order number collision)
+// P2025 - Record not found (product not found)
+// P2003 - Foreign key constraint violation (invalid productId/userId)
+// P2023 - Inconsistent column data (invalid ObjectId format)
+// P2034 - Transaction failed due to conflict or timeout
 
 const TAX_RATE = 0.08;
 const FREE_SHIPPING_THRESHOLD = 100;
@@ -139,6 +147,45 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error("Checkout error:", error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // P2002 - Unique constraint violation (order number collision, retry)
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { error: "Order creation conflict. Please try again", code: "P2002" },
+          { status: 409 }
+        );
+      }
+      // P2025 - Record not found
+      if (error.code === "P2025") {
+        return NextResponse.json(
+          { error: "Product or cart item not found", code: "P2025" },
+          { status: 404 }
+        );
+      }
+      // P2003 - Foreign key constraint violation
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Invalid product or user reference", code: "P2003" },
+          { status: 400 }
+        );
+      }
+      // P2023 - Invalid ObjectId format
+      if (error.code === "P2023") {
+        return NextResponse.json(
+          { error: "Invalid ID format", code: "P2023" },
+          { status: 400 }
+        );
+      }
+      // P2034 - Transaction failed
+      if (error.code === "P2034") {
+        return NextResponse.json(
+          { error: "Transaction failed. Please try again", code: "P2034" },
+          { status: 500 }
+        );
+      }
+    }
+
     return NextResponse.json({ error: "Failed to process checkout" }, { status: 500 });
   }
 }
