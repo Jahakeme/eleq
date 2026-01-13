@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { DM_Sans, Nunito } from "next/font/google";
+import NextAuthProvider from "@/utils/providers/NextAuthProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -26,7 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${dmSans.variable} ${nunito.variable}`}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <NextAuthProvider>
+          {children}
+        </NextAuthProvider>
+      </body>
     </html>
   );
 }

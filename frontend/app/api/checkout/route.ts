@@ -1,138 +1,89 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import prisma from "@/prisma/connection";
-import { requireAuth } from "@/lib/auth";
-import { isError, getErrorMessage } from "@/lib/error-helpers";
-import { successResponse, errorResponse } from "@/lib/api-response";
-import {
-  generateOrderNumber,
-  calculateOrderTotals,
-  validateAddress,
-} from "@/lib/order-helper";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+const TAX_RATE = 0.08;
+const FREE_SHIPPING_THRESHOLD = 100;
+const SHIPPING_COST = 10;
+
+function validateAddress(address: { street?: string; city?: string; state?: string; zipCode?: string; country?: string }) {
+  const required = ["street", "city", "state", "zipCode", "country"] as const;
+  for (const field of required) {
+    if (!address?.[field]) return { valid: false, field };
+  }
+  return { valid: true, field: null };
+}
+
+function calculateOrderTotals(subtotal: number) {
+  const tax = subtotal * TAX_RATE;
+  const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  return { subtotal, tax, shippingCost, total: subtotal + tax + shippingCost };
+}
+
+async function generateOrderNumber() {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `ORD-${date}-${random}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const userId = session.user.id;
+
     const body = await request.json();
+    const { shippingAddress, paymentMethod = "card", saveAddress = false, productId, quantity = 1 } = body;
 
-    const {
-      shippingAddress,
-      paymentMethod = "card",
-      saveAddress = false,
-      productId, // For direct buy
-      quantity = 1, // For direct buy
-    } = body;
-
-    // Validate shipping address
     const addressValidation = validateAddress(shippingAddress);
     if (!addressValidation.valid) {
-      return errorResponse(
-        `${addressValidation.field} is required in shipping address`,
-        400
-      );
+      return NextResponse.json({ error: `${addressValidation.field} is required in shipping address` }, { status: 400 });
     }
 
-    // Determine checkout type: cart or direct buy
-    const orderItems: Array<{
-      productId: string;
-      productName: string;
-      price: number;
-      quantity: number;
-    }> = [];
+    const orderItems: Array<{ productId: string; productName: string; price: number; quantity: number }> = [];
 
     if (productId) {
-      // Direct buy flow
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          stock: true,
-          status: true,
-        },
+        select: { id: true, name: true, price: true, stock: true, status: true },
       });
 
-      if (!product) {
-        return errorResponse("Product not found", 404);
-      }
+      if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      if (product.status !== "ACTIVE") return NextResponse.json({ error: "Product not available" }, { status: 400 });
+      if (product.stock < quantity) return NextResponse.json({ error: "Insufficient stock" }, { status: 400 });
 
-      if (product.status !== "ACTIVE") {
-        return errorResponse("Product not available", 400);
-      }
-
-      if (product.stock < quantity) {
-        return errorResponse("Insufficient stock", 400);
-      }
-
-      orderItems.push({
-        productId: product.id,
-        productName: product.name,
-        price: product.price,
-        quantity: quantity,
-      });
+      orderItems.push({ productId: product.id, productName: product.name, price: product.price, quantity });
     } else {
-      // Cart checkout flow
       const cartItems = await prisma.cartItem.findMany({
-        where: { userId: user.id },
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              stock: true,
-              status: true,
-            },
-          },
-        },
+        where: { userId },
+        include: { product: { select: { id: true, name: true, price: true, stock: true, status: true } } },
       });
 
-      if (cartItems.length === 0) {
-        return errorResponse("Cart is empty", 400);
-      }
+      if (cartItems.length === 0) return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
 
-      // Validate all items
       for (const item of cartItems) {
         if (item.product.status !== "ACTIVE") {
-          return errorResponse(
-            `${item.product.name} is no longer available`,
-            400
-          );
+          return NextResponse.json({ error: `${item.product.name} is no longer available` }, { status: 400 });
         }
-
         if (item.product.stock < item.quantity) {
-          return errorResponse(
-            `Insufficient stock for ${item.product.name}. Only ${item.product.stock} available`,
-            400
-          );
+          return NextResponse.json({ error: `Insufficient stock for ${item.product.name}. Only ${item.product.stock} available` }, { status: 400 });
         }
-
-        orderItems.push({
-          productId: item.product.id,
-          productName: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-        });
+        orderItems.push({ productId: item.product.id, productName: item.product.name, price: item.product.price, quantity: item.quantity });
       }
     }
 
-    // Calculate totals
-    const subtotal = orderItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const totals = calculateOrderTotals(subtotal);
-
-    // Generate order number
     const orderNumber = await generateOrderNumber();
 
-    // Create order with transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Create order
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
-          userId: user.id,
+          userId,
           subtotal: totals.subtotal,
           tax: totals.tax,
           shippingCost: totals.shippingCost,
@@ -144,89 +95,50 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create order items and update stock
       for (const item of orderItems) {
         await tx.orderItem.create({
-          data: {
-            orderId: newOrder.id,
-            productId: item.productId,
-            productName: item.productName,
-            price: item.price,
-            quantity: item.quantity,
-          },
+          data: { orderId: newOrder.id, productId: item.productId, productName: item.productName, price: item.price, quantity: item.quantity },
         });
-
-        // Decrease product stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
+        await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
       }
 
-      // Clear cart if checkout from cart
       if (!productId) {
-        await tx.cartItem.deleteMany({
-          where: { userId: user.id },
-        });
+        await tx.cartItem.deleteMany({ where: { userId } });
       }
 
-      // Save address to user profile if requested
       if (saveAddress) {
-        await tx.user.update({
-          where: { id: user.id },
-          data: { address: shippingAddress },
-        });
+        await tx.user.update({ where: { id: userId }, data: { address: shippingAddress } });
       }
 
       return newOrder;
     });
 
-    // Fetch complete order with items
     const completeOrder = await prisma.order.findUnique({
       where: { id: order.id },
-      include: {
-        items: {
-          select: {
-            productName: true,
-            price: true,
-            quantity: true,
-          },
-        },
-      },
+      include: { items: { select: { productName: true, price: true, quantity: true } } },
     });
 
-    // This is where we will implement payment gateway but for now, let's return a mock payment URL
     const paymentUrl = `https://checkout.stripe.com/pay/${order.id}`;
 
-    return successResponse(
-      {
-        success: true,
-        message: "Order placed successfully",
-        order: {
-          id: completeOrder!.id,
-          orderNumber: completeOrder!.orderNumber,
-          items: completeOrder!.items,
-          subtotal: completeOrder!.subtotal,
-          tax: completeOrder!.tax,
-          shippingCost: completeOrder!.shippingCost,
-          total: completeOrder!.total,
-          status: completeOrder!.status,
-          paymentStatus: completeOrder!.paymentStatus,
-          createdAt: completeOrder!.createdAt,
-        },
-        paymentUrl,
+    return NextResponse.json({
+      success: true,
+      message: "Order placed successfully",
+      order: {
+        id: completeOrder!.id,
+        orderNumber: completeOrder!.orderNumber,
+        items: completeOrder!.items,
+        subtotal: completeOrder!.subtotal,
+        tax: completeOrder!.tax,
+        shippingCost: completeOrder!.shippingCost,
+        total: completeOrder!.total,
+        status: completeOrder!.status,
+        paymentStatus: completeOrder!.paymentStatus,
+        createdAt: completeOrder!.createdAt,
       },
-      201
-    );
-  } catch (error: unknown) {
-    if (isError(error) && error.message === "Unauthorized") {
-      return errorResponse("Not authenticated", 401);
-    }
-    console.error("Checkout error:", getErrorMessage(error));
-    return errorResponse("Failed to process checkout", 500);
+      paymentUrl,
+    }, { status: 201 });
+  } catch (error) {
+    console.error("Checkout error:", error);
+    return NextResponse.json({ error: "Failed to process checkout" }, { status: 500 });
   }
 }

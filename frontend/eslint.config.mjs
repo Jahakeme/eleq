@@ -13,6 +13,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-]);
+  {
+   "rules" :   {
+   "@typescript-eslint/no-unused-vars" :   [
+   "error" ,
+   {
+   "caughtErrors" :   "all" ,
+   "caughtErrorsIgnorePattern" :   "^_" ,
+   // ... (other options)
+   }
+   ]
+   }
+}]);
 
 export default eslintConfig;
