@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const Navbar = () => {
   return (
-     <nav className="w-full border-b">
+     <nav className="w-full ">
       <div className="relative mx-auto max-w-7xl px-6 sm:px-8 py-4">
         {/* Logo */}
         <div className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2">
