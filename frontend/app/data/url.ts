@@ -173,7 +173,7 @@ export const inventory: Product[] = [
     id: 20,
     name: "Gray Computer Desktop Monitor",
     image:
-      "https://plus.unsplash.com/premium_photo-1680721575441-18d5a0567269?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bW9uaXRvcnxlbnwwfHwwfHx8MA%3D%3D",
+      "https://images.unsplash.com/photo-1585792180666-f7347c490ee2?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bW9uaXRvcnxlbnwwfHwwfHx8MA%3D%3D",
     price: 400,
     quantity: 3,
   },
@@ -191,7 +191,7 @@ export const inventory: Product[] = [
     id: 22,
     name: "Light Peach Headphones",
     image:
-      "https://plus.unsplash.com/premium_photo-1679513691474-73102089c117?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aGVhZHBob25lc3xlbnwwfHwwfHx8MA%3D%3D",
+      "https://images.unsplash.com/photo-1545127398-14699f92334b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGhlYWRwaG9uZXN8ZW58MHx8MHx8fDA%3D",
     price: 80,
     quantity: 5,
   },
