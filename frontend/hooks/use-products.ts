@@ -41,9 +41,14 @@ export function useProducts(options: UseProductsOptions = {}) {
           throw new Error(data.error || "Failed to fetch products");
         }
 
-        setProducts((prev) =>
-          append ? [...prev, ...data.products] : data.products
-        );
+        setProducts((prev) => {
+          if (!append) return data.products;
+          const existingIds = new Set(prev.map((p) => p.id));
+          const newProducts = data.products.filter(
+            (p: Product) => !existingIds.has(p.id)
+          );
+          return [...prev, ...newProducts];
+        });
         setPagination(data.pagination);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to fetch products";
