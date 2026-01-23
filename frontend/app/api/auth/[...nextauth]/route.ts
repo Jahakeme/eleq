@@ -70,12 +70,12 @@ export const authOptions:NextAuthOptions = {
     async session({ session }) {
       const loggedInUser = await prisma.user.findFirst({
          where: { email: session.user?.email },
-         select: { id: true }
+         select: { id: true, fullName: true, image: true }
         });
       session.user.id = loggedInUser!.id;
-      session.user.name = session.user.name!;
+      session.user.name = loggedInUser!.fullName;
       session.user.email = session.user.email!;
-      session.user.image = session.user.image!;
+      session.user.image = loggedInUser?.image || session.user.image!;
 
       return session
     },
