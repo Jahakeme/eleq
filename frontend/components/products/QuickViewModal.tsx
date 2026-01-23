@@ -9,6 +9,7 @@ import { X, Minus, Plus, ShoppingCart, Zap, Loader2 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCartOptional } from "@/hooks/use-cart";
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -18,6 +19,7 @@ interface QuickViewModalProps {
 export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const router = useRouter();
   const { status } = useSession();
+  const cart = useCartOptional();
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
@@ -108,6 +110,11 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
         throw new Error(data.error || "Failed to add to cart");
       }
 
+      // Refresh cart count if in CartProvider context
+      if (cart?.refreshCart) {
+        await cart.refreshCart();
+      }
+
       handleClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to add to cart";
@@ -159,6 +166,11 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to add to cart");
+      }
+
+      // Refresh cart count if in CartProvider context
+      if (cart?.refreshCart) {
+        await cart.refreshCart();
       }
 
       // Redirect to checkout
@@ -234,11 +246,11 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
               <span className="text-3xl font-bold">
-                ${product.price.toFixed(2)}
+                ₦{product.price.toFixed(2)}
               </span>
               {product.comparePrice && product.comparePrice > product.price && (
                 <span className="text-lg text-muted-foreground line-through">
-                  ${product.comparePrice.toFixed(2)}
+                  ₦{product.comparePrice.toFixed(2)}
                 </span>
               )}
             </div>
