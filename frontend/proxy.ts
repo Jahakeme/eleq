@@ -10,13 +10,16 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard route
-  if (pathname.startsWith("/dashboard")) {
-    if (!token) {
-      const signInUrl = new URL("/signin", request.url);
-      signInUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(signInUrl);
-    }
+  // Protected routes that require authentication
+  const protectedPaths = ["/dashboard", "/cart", "/checkout"];
+  const isProtectedPath = protectedPaths.some((path) =>
+    pathname.startsWith(path)
+  );
+
+  if (isProtectedPath && !token) {
+    const signInUrl = new URL("/signin", request.url);
+    signInUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(signInUrl);
   }
 
   // Optionally redirect authenticated users from signin/signup to dashboard
@@ -28,5 +31,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/signin", "/signup"],
+  matcher: ["/dashboard/:path*", "/cart/:path*", "/checkout/:path*", "/signin", "/signup"],
 };
