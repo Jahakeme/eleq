@@ -34,7 +34,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
               className="rounded-full object-cover"
             />
           ) : (
-            <div className="size-16 rounded-full bg-[var(--colour-primary)] flex items-center justify-center text-white text-xl font-semibold">
+            <div className="size-16 rounded-full bg-(--colour-primary) flex items-center justify-center text-white text-xl font-semibold">
               {initials}
             </div>
           )}
