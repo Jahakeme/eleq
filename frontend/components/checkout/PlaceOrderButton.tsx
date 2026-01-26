@@ -27,6 +27,7 @@ export function PlaceOrderButton({
   const { loadPaystack } = usePaystack();
 
   const isFormValid =
+    email?.trim() !== "" &&
     shippingAddress.street.trim() !== "" &&
     shippingAddress.city.trim() !== "" &&
     shippingAddress.state.trim() !== "" &&
@@ -34,6 +35,11 @@ export function PlaceOrderButton({
     shippingAddress.country.trim() !== "";
 
   const handleClick = async () => {
+    if (!email?.trim()) {
+      setError("Email address is required for payment");
+      return;
+    }
+
     if (!isFormValid) {
       setError("Please fill in all shipping address fields");
       return;
@@ -63,7 +69,7 @@ export function PlaceOrderButton({
       }
 
       //Trigger Paystack Popup instead of redirecting
-      loadPaystack(email ?? "", data.order.total, data.order.id, (response) => {
+      loadPaystack(email!, data.order.total, data.order.id, (response) => {
         window.location.href = `/api/checkout/verify?reference=${response.reference}`;
       });
     } catch (err: unknown) {
@@ -101,8 +107,7 @@ export function PlaceOrderButton({
       </button>
 
       <p className="text-xs text-center text-muted-foreground">
-        By placing your order, you agree to our Terms of Service and Privacy
-        Policy
+        By placing your order, you agree to our Terms of Service and Privacy Policy
       </p>
     </div>
   );
