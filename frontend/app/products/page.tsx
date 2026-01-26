@@ -20,7 +20,7 @@ async function getProducts(
     ...searchParams,
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const res = await fetch(`${baseUrl}/api/products?${params}`, {
     cache: "no-store",
   });
@@ -33,7 +33,7 @@ async function getProducts(
 }
 
 async function getCategories(): Promise<CategoriesResponse> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const res = await fetch(`${baseUrl}/api/categories?withCount=true`, {
     next: { revalidate: 3600 },
   });
