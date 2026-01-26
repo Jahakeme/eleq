@@ -190,7 +190,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   return (
     <div
       ref={backdropRef}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
       onClick={handleClose}
     >
       {/* Backdrop */}
@@ -201,8 +201,8 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
         ref={modalRef}
         className={cn(
           "relative w-full sm:max-w-2xl lg:max-w-4xl",
-          "bg-background rounded-t-2xl sm:rounded-2xl",
-          "max-h-[90vh] overflow-auto"
+          "bg-background rounded-2xl",
+          "max-h-[85vh] overflow-auto"
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -236,7 +236,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
             )}
 
             {/* Name */}
-            <h2 className="font-[var(--font-nunito)] text-2xl font-bold mb-2">
+            <h2 className="font-(--font-nunito) text-2xl mb-2">
               {product.name}
             </h2>
 
@@ -303,7 +303,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
               <Button
                 variant="outline"
                 size="lg"
-                className="flex-1 rounded-full"
+                className="flex-1 rounded-full px-6 py-4"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock || isLoading}
               >
@@ -318,7 +318,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
               </Button>
               <Button
                 size="lg"
-                className="flex-1 rounded-full"
+                className="flex-1 rounded-full px-6 py-4"
                 onClick={handleBuyNow}
                 disabled={isOutOfStock || isLoading}
               >
