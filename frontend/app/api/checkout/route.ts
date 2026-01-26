@@ -107,7 +107,17 @@ export async function POST(request: NextRequest) {
         await tx.orderItem.create({
           data: { orderId: newOrder.id, productId: item.productId, productName: item.productName, price: item.price, quantity: item.quantity },
         });
-        await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
+        const updatedProduct = await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        });
+
+        if (updatedProduct.stock <= 0) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { status: "OUT_OF_STOCK" },
+          });
+        }
       }
 
       if (!productId) {
@@ -126,8 +136,6 @@ export async function POST(request: NextRequest) {
       include: { items: { select: { productName: true, price: true, quantity: true } } },
     });
 
-    const paymentUrl = `https://checkout.stripe.com/pay/${order.id}`;
-
     return NextResponse.json({
       success: true,
       message: "Order placed successfully",
@@ -143,7 +151,6 @@ export async function POST(request: NextRequest) {
         paymentStatus: completeOrder!.paymentStatus,
         createdAt: completeOrder!.createdAt,
       },
-      paymentUrl,
     }, { status: 201 });
   } catch (error) {
     console.error("Checkout error:", error);
