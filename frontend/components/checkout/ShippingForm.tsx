@@ -75,7 +75,10 @@ export function ShippingForm({
           checked={saveAddress}
           onCheckedChange={(v) => onToggleSaveAddress(Boolean(v))}
         />
-        <label htmlFor="save-address" className="text-sm text-muted-foreground cursor-pointer">
+        <label
+          htmlFor="save-address"
+          className="text-sm text-muted-foreground cursor-pointer"
+        >
           Save this address for future orders
         </label>
       </div>

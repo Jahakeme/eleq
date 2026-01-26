@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { ShippingAddress, PlaceOrderPayload } from "@/lib/checkout";
+import { usePaystack } from "@/hooks/usePaystack";
 
 type Props = {
   shippingAddress: ShippingAddress;
@@ -10,6 +11,7 @@ type Props = {
   paymentMethod: "card";
   productId?: string;
   disabled?: boolean;
+  email?: string;
 };
 
 export function PlaceOrderButton({
@@ -18,9 +20,11 @@ export function PlaceOrderButton({
   paymentMethod,
   productId,
   disabled = false,
+  email,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { loadPaystack } = usePaystack();
 
   const isFormValid =
     shippingAddress.street.trim() !== "" &&
@@ -58,7 +62,10 @@ export function PlaceOrderButton({
         throw new Error(data.error || "Checkout failed");
       }
 
-      window.location.href = data.paymentUrl;
+      //Trigger Paystack Popup instead of redirecting
+      loadPaystack(email ?? "", data.order.total, data.order.id, (response) => {
+        window.location.href = `/api/checkout/verify?reference=${response.reference}`;
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An error occurred";
       setError(message);
@@ -94,7 +101,8 @@ export function PlaceOrderButton({
       </button>
 
       <p className="text-xs text-center text-muted-foreground">
-        By placing your order, you agree to our Terms of Service and Privacy Policy
+        By placing your order, you agree to our Terms of Service and Privacy
+        Policy
       </p>
     </div>
   );
