@@ -58,11 +58,27 @@ const gridItems = [
 const ScrollAnimationGrid = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
-  const animationsInitialized = useRef(false);
+  const rafIdRef = useRef<number | null>(null);
+  const tickerCallbackRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
-    if (animationsInitialized.current) return;
-    animationsInitialized.current = true;
+    const gridElement = gridRef.current;
+    if (!gridElement) return;
+
+    // Kill any existing ScrollTrigger instances and Lenis before re-initializing
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    if (lenisRef.current) {
+      lenisRef.current.destroy();
+      lenisRef.current = null;
+    }
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    if (tickerCallbackRef.current) {
+      gsap.ticker.remove(tickerCallbackRef.current);
+      tickerCallbackRef.current = null;
+    }
 
     // Initialize Lenis smooth scrolling
     lenisRef.current = new Lenis({
@@ -72,22 +88,18 @@ const ScrollAnimationGrid = () => {
 
     const scrollFn = (time: number) => {
       lenisRef.current?.raf(time);
-      requestAnimationFrame(scrollFn);
+      rafIdRef.current = requestAnimationFrame(scrollFn);
     };
-    requestAnimationFrame(scrollFn);
+    rafIdRef.current = requestAnimationFrame(scrollFn);
 
     // Sync Lenis with GSAP ScrollTrigger
     lenisRef.current.on("scroll", ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
+    tickerCallbackRef.current = (time: number) => {
       lenisRef.current?.raf(time * 1000);
-    });
-
+    };
+    gsap.ticker.add(tickerCallbackRef.current);
     gsap.ticker.lagSmoothing(0);
-
-    // Wait for images to load before animating
-    const gridElement = gridRef.current;
-    if (!gridElement) return;
 
     const items = gridElement.querySelectorAll(".grid__item");
 
@@ -111,16 +123,36 @@ const ScrollAnimationGrid = () => {
           trigger: item,
           start: "top top",
           end: "bottom top",
-          scrub: 0.5, // Smooth scrubbing with slight delay for smoother reversal
+          scrub: 0.5,
         },
       });
     });
 
+    // Refresh ScrollTrigger after all animations are set up
+    ScrollTrigger.refresh();
+
     // Cleanup
     return () => {
-      lenisRef.current?.destroy();
+      // Cancel the animation frame loop
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+
+      // Remove the GSAP ticker callback
+      if (tickerCallbackRef.current) {
+        gsap.ticker.remove(tickerCallbackRef.current);
+        tickerCallbackRef.current = null;
+      }
+
+      // Kill all ScrollTrigger instances
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      animationsInitialized.current = false;
+
+      // Destroy Lenis
+      if (lenisRef.current) {
+        lenisRef.current.destroy();
+        lenisRef.current = null;
+      }
     };
   }, []);
 
