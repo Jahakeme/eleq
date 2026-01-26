@@ -13,7 +13,7 @@ import {
 
 export function Successpage() {
   return (
-    <Card className="max-w-md w-full border-none shadow-2xl bg-white text-[#540B26]">
+    <Card className="max-w-md w-full border-none shadow-2xl bg-white text-(--colour-secondary)">
       <CardHeader className="text-center pb-2">
         <div className="flex justify-center mb-4">
           <div className="rounded-full bg-green-100 p-3">
@@ -29,7 +29,7 @@ export function Successpage() {
       </CardHeader>
 
       <CardContent className="space-y-6 py-6">
-        <div className="bg-[#E3E2DF]/30 rounded-lg p-4 space-y-3 border border-[#A62653]/10">
+        <div className="bg-(--colour-background)/30 rounded-lg p-4 space-y-3 border border-(--colour-primary)/10">
           <div className="flex justify-between text-sm">
             <span className="font-medium">Status</span>
             <span className="text-green-600 font-bold uppercase text-xs bg-green-50 px-2 py-1 rounded">
@@ -46,7 +46,7 @@ export function Successpage() {
       <CardFooter className="flex flex-col gap-3">
         <Button
           asChild
-          className="w-full bg-[#540B26] hover:bg-[#A62653] text-white py-6"
+          className="w-full bg-(--colour-secondary) hover:bg-(--colour-primary) text-white py-6"
         >
           <Link href="/dashboard" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
@@ -58,7 +58,7 @@ export function Successpage() {
         <Button
           asChild
           variant="ghost"
-          className="w-full text-[#A62653] hover:bg-[#E3E2DF]"
+          className="w-full text-(--colour-primary) hover:bg-(--colour-background)"
         >
           <Link href="/products" className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4" />
