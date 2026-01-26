@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protected routes that require authentication
-  const protectedPaths = ["/dashboard", "/cart", "/checkout"];
+  const protectedPaths = ["/dashboard", "/cart", "/checkout", "/orders"];
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );
@@ -31,5 +31,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/cart/:path*", "/checkout/:path*", "/signin", "/signup"],
+  matcher: ["/dashboard/:path*", "/cart/:path*", "/checkout/:path*", "/orders/:path*", "/signin", "/signup"],
 };
