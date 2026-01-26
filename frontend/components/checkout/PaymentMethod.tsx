@@ -16,7 +16,7 @@ export function PaymentMethod() {
         <div className="flex-1">
           <p className="font-medium">Credit / Debit Card</p>
           <p className="text-sm text-muted-foreground mt-1">
-            You will be redirected to Stripe to complete your payment securely.
+            You will be redirected to Paystack to complete your payment securely.
           </p>
         </div>
         <div className="p-2 rounded-full bg-green-100">
