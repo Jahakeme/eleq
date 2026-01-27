@@ -20,10 +20,10 @@ export default function LoginPage() {
         />
 
         <Image
-          src="/loff.png"
+          src="/login.jpg"
           alt="Login"
           fill
-          className="object-cover"
+          className="object-cover p-10"
           priority
         />
 
